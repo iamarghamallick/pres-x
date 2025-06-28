@@ -1,7 +1,7 @@
-import { Dashboard } from "../components/Dashboard";
+import { PatientsPage } from "../../components/Dashboard";
 import Link from 'next/link';
 
-export default function Home() {
+export default function Patients() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -10,12 +10,13 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="text-2xl font-bold text-gray-900">PresX</Link>
+              <span className="ml-2 text-sm text-gray-500">Prescription Management</span>
             </div>
             <nav className="flex space-x-4">
-              <Link href="/" className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium">
+              <Link href="/" className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
                 Dashboard
               </Link>
-              <Link href="/patients" className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
+              <Link href="/patients" className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium">
                 Patients
               </Link>
               <Link href="/prescriptions" className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
@@ -28,14 +29,8 @@ export default function Home() {
 
       {/* Main Content */}
       <main>
-        <Dashboard />
+        <PatientsPage />
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        </div>
-      </footer>
     </div>
   );
 }
