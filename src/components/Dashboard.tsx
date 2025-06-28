@@ -6,7 +6,29 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { dashboardService, patientService } from '@/lib/firestore';
 import { DashboardData, Patient } from '@/types/firestore';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { 
+  Loader2, 
+  AlertCircle, 
+  Users, 
+  FileText, 
+  Activity, 
+  Stethoscope,
+  Phone,
+  Mail,
+  Calendar,
+  Search,
+  Filter,
+  Eye,
+  Download,
+  Plus,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Clock,
+  UserPlus,
+  PlusCircle
+} from 'lucide-react';
 
 // Dashboard/Homepage Component
 export function Dashboard() {
@@ -76,8 +98,11 @@ export function Dashboard() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Welcome Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome back, Dr. Smith</h1>
-        <p className="text-gray-600">Here's what's happening with your patients today.</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+          <Stethoscope className="w-10 h-10 text-blue-600" />
+          Welcome back, Dr. Smith
+        </h1>
+        <p className="text-gray-600 text-lg">Here's what's happening with your patients today.</p>
       </div>
       
       {/* Stats Cards */}
@@ -85,8 +110,9 @@ export function Dashboard() {
         <StatsCard
           title="Total Patients"
           value={dashboardData.stats.totalPatients}
-          icon="👥"
+          icon={<Users className="w-8 h-8" />}
           bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
+          iconColor="text-blue-600"
           textColor="text-blue-700"
           trend="+12% from last month"
         />
@@ -94,8 +120,9 @@ export function Dashboard() {
           title="Recent Prescriptions"
           value={dashboardData.stats.recentPrescriptions}
           subtitle="Last 7 days"
-          icon="📝"
+          icon={<FileText className="w-8 h-8" />}
           bgColor="bg-gradient-to-br from-green-50 to-green-100"
+          iconColor="text-green-600"
           textColor="text-green-700"
           trend="+8% from last week"
         />
@@ -103,8 +130,9 @@ export function Dashboard() {
           title="Today's Prescriptions"
           value={dashboardData.stats.todaysPrescriptions}
           subtitle="Today"
-          icon="⚡"
+          icon={<Activity className="w-8 h-8" />}
           bgColor="bg-gradient-to-br from-purple-50 to-purple-100"
+          iconColor="text-purple-600"
           textColor="text-purple-700"
           trend="+3 since yesterday"
         />
@@ -112,8 +140,9 @@ export function Dashboard() {
           title="Active Patients"
           value={dashboardData.stats.activePatients}
           subtitle="This month"
-          icon="🩺"
+          icon={<TrendingUp className="w-8 h-8" />}
           bgColor="bg-gradient-to-br from-orange-50 to-orange-100"
+          iconColor="text-orange-600"
           textColor="text-orange-700"
           trend="+18% from last month"
         />
@@ -125,15 +154,17 @@ export function Dashboard() {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Recent Prescriptions Generated</h2>
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-gray-600" />
+                Recent Prescriptions Generated
+              </h2>
               <Link 
                 href="/patients"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
+                <Users className="w-4 h-4 mr-2" />
                 View All Patients
-                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronRight className="ml-2 w-4 h-4" />
               </Link>
             </div>
             <div className="space-y-4">
@@ -157,7 +188,10 @@ export function Dashboard() {
         {/* Recent Activities */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Activities</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-gray-600" />
+              Recent Activities
+            </h2>
             <div className="space-y-4">
               {dashboardData.recentActivities.map((activity) => (
                 <ActivityCard key={activity.id} activity={{
@@ -168,7 +202,9 @@ export function Dashboard() {
                   timestamp: activity.timestamp?.toDate ? 
                     activity.timestamp.toDate().toLocaleString() : 
                     'Just now',
-                  icon: activity.type === 'prescription_created' ? '📝' : '👤'
+                  icon: activity.type === 'prescription_created' ? 
+                    <FileText className="w-5 h-5 text-blue-600" /> : 
+                    <User className="w-5 h-5 text-green-600" />
                 }} />
               ))}
             </div>
@@ -179,11 +215,14 @@ export function Dashboard() {
       {/* Quick Actions */}
       <div className="mt-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-gray-600" />
+            Quick Actions
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/create">
               <QuickActionButton
-                icon="�"
+                icon={<FileText className="w-6 h-6" />}
                 title="Create Prescription"
                 description="Write a new prescription for existing patient"
                 action={() => {}}
@@ -191,7 +230,7 @@ export function Dashboard() {
             </Link>
             <Link href="/patients">
               <QuickActionButton
-                icon="�"
+                icon={<Users className="w-6 h-6" />}
                 title="View All Patients"
                 description="Browse and manage all patient records"
                 action={() => {}}
@@ -199,7 +238,7 @@ export function Dashboard() {
             </Link>
             <Link href="/prescriptions">
               <QuickActionButton
-                icon="📊"
+                icon={<Activity className="w-6 h-6" />}
                 title="View Prescriptions"
                 description="Access all prescriptions and reports"
                 action={() => {}}
@@ -217,19 +256,20 @@ interface StatsCardProps {
   title: string;
   value: number;
   subtitle?: string;
-  icon: string;
+  icon: React.ReactNode;
   bgColor: string;
+  iconColor: string;
   textColor: string;
   trend?: string;
 }
 
-function StatsCard({ title, value, subtitle, icon, bgColor, textColor, trend }: StatsCardProps) {
+function StatsCard({ title, value, subtitle, icon, bgColor, iconColor, textColor, trend }: StatsCardProps) {
   return (
-    <div className={`${bgColor} rounded-xl p-6 border border-gray-200`}>
+    <div className={`${bgColor} rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow`}>
       <div className="flex items-center justify-between mb-4">
-        <div className="text-3xl">{icon}</div>
+        <div className={`${iconColor} flex-shrink-0`}>{icon}</div>
         {trend && (
-          <span className="text-xs bg-white/60 px-2 py-1 rounded-full text-gray-600">
+          <span className="text-xs bg-white/70 px-2 py-1 rounded-full text-gray-600 font-medium shadow-sm">
             {trend}
           </span>
         )}
@@ -279,13 +319,13 @@ function PatientCard({ patient }: PatientCardProps) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
               <p className="flex items-center gap-2">
-                <span>📞</span> {patient.phone}
+                <Phone className="w-4 h-4" /> {patient.phone}
               </p>
               <p className="flex items-center gap-2">
-                <span>📅</span> {new Date(patient.lastVisit).toLocaleDateString()}
+                <Calendar className="w-4 h-4" /> {new Date(patient.lastVisit).toLocaleDateString()}
               </p>
               <p className="flex items-center gap-2">
-                <span>🏥</span> {patient.consultationType}
+                <Stethoscope className="w-4 h-4" /> {patient.consultationType}
               </p>
             </div>
           </div>
@@ -306,21 +346,21 @@ function PatientCard({ patient }: PatientCardProps) {
               className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
               title="View Prescription PDF"
             >
-              📄
+              <Download className="w-4 h-4" />
             </button>
             <Link
               href={`/patients/${patient.id}`}
               className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
               title="View Patient Details"
             >
-              👁️
+              <Eye className="w-4 h-4" />
             </Link>
             {/* Add audio playback button if recording exists */}
             <button
               className="p-2 text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
               title="Play Conversation Recording"
             >
-              🎵
+              <Activity className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -337,14 +377,14 @@ interface ActivityCardProps {
     patientName: string;
     description: string;
     timestamp: string;
-    icon: string;
+    icon: React.ReactNode;
   };
 }
 
 function ActivityCard({ activity }: ActivityCardProps) {
   return (
     <div className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-      <div className="text-xl">{activity.icon}</div>
+      <div className="flex-shrink-0">{activity.icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900">{activity.patientName}</p>
         <p className="text-sm text-gray-600">{activity.description}</p>
@@ -356,7 +396,7 @@ function ActivityCard({ activity }: ActivityCardProps) {
 
 // Quick Action Button Component
 interface QuickActionButtonProps {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
   action: () => void;
@@ -365,10 +405,10 @@ interface QuickActionButtonProps {
 function QuickActionButton({ icon, title, description, action }: QuickActionButtonProps) {
   return (
     <div
-      className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200 text-left group cursor-pointer block"
+      className="p-6 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200 text-left group cursor-pointer block"
     >
-      <div className="text-2xl mb-2">{icon}</div>
-      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+      <div className="text-blue-600 group-hover:text-blue-700 mb-3">{icon}</div>
+      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
         {title}
       </h3>
       <p className="text-sm text-gray-600">{description}</p>
@@ -496,16 +536,18 @@ export function PatientsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">All Patients</h1>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Users className="w-8 h-8 text-blue-600" />
+            All Patients
+          </h1>
           <p className="text-gray-600 mt-1">
             Manage and view all patient records and prescriptions
           </p>
         </div>
-        <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        onClick={() => window.location.href = '/create'}>
-          <span>👤</span>
+        <Link href="/create" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
+          <UserPlus className="w-5 h-5" />
           Add New Patient
-        </button>
+        </Link>
       </div>
 
       {/* Filters and Search */}
@@ -513,7 +555,8 @@ export function PatientsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <Search className="w-4 h-4" />
               Search Patients
             </label>
             <div className="relative">
@@ -522,17 +565,16 @@ export function PatientsPage() {
                 placeholder="Search by name, phone, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               />
-              <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
           </div>
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <Filter className="w-4 h-4" />
               Status
             </label>
             <select
@@ -643,8 +685,9 @@ export function PatientsPage() {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  <ChevronLeft className="w-4 h-4" />
                   Previous
                 </button>
                 
@@ -673,9 +716,10 @@ export function PatientsPage() {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -721,15 +765,25 @@ function PatientRow({ patient }: PatientRowProps) {
         </div>
       </td>
       <td className="px-6 py-4">
-        <div className="text-sm text-gray-900">{patient.phone}</div>
-        <div className="text-sm text-gray-500">{patient.email}</div>
+        <div className="flex items-center gap-2 text-sm text-gray-900">
+          <Phone className="w-4 h-4 text-gray-400" />
+          {patient.phone}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+          <Mail className="w-4 h-4 text-gray-400" />
+          {patient.email}
+        </div>
       </td>
       <td className="px-6 py-4">
-        <div className="text-sm text-gray-900">
+        <div className="flex items-center gap-2 text-sm text-gray-900">
+          <Calendar className="w-4 h-4 text-gray-400" />
           {new Date(patient.lastVisit).toLocaleDateString()}
         </div>
-        <div className="text-sm text-gray-500">{patient.consultationType}</div>
-        <div className="text-xs text-gray-400">{patient.diagnosis}</div>
+        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+          <Stethoscope className="w-4 h-4 text-gray-400" />
+          {patient.consultationType}
+        </div>
+        <div className="text-xs text-gray-400 mt-1">{patient.diagnosis}</div>
       </td>
       <td className="px-6 py-4">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -749,31 +803,33 @@ function PatientRow({ patient }: PatientRowProps) {
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center space-x-2">
-          <button
+          <Link
+            href={`/patients/${patient.id}`}
             className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
             title="View Patient Details"
           >
-            👁️
-          </button>
-          <button
+            <Eye className="w-4 h-4" />
+          </Link>
+          <Link
+            href={`/create?patientId=${patient.id}`}
             className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
             title="Create New Prescription"
           >
-            📝
-          </button>
+            <Plus className="w-4 h-4" />
+          </Link>
           <button
             onClick={() => window.open(patient.pdfUrl, '_blank')}
             className="p-2 text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
             title="View Latest Prescription"
           >
-            📄
+            <Download className="w-4 h-4" />
           </button>
           {patient.testReports.length > 0 && (
             <button
               className="p-2 text-orange-600 hover:bg-orange-50 rounded-md transition-colors"
               title="View Test Reports"
             >
-              🧪
+              <FileText className="w-4 h-4" />
             </button>
           )}
         </div>
