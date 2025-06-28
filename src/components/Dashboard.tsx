@@ -262,32 +262,36 @@ interface PatientCardProps {
 
 function PatientCard({ patient }: PatientCardProps) {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-              {patient.name.split(' ').map(n => n[0]).join('')}
+    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer">
+      <Link href={`/patients/${patient.id}`} className="block">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                {patient.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{patient.name}</h3>
+                <p className="text-sm text-gray-600">
+                  {patient.age} years • {patient.gender}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{patient.name}</h3>
-              <p className="text-sm text-gray-600">
-                {patient.age} years • {patient.gender}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+              <p className="flex items-center gap-2">
+                <span>📞</span> {patient.phone}
+              </p>
+              <p className="flex items-center gap-2">
+                <span>📅</span> {new Date(patient.lastVisit).toLocaleDateString()}
+              </p>
+              <p className="flex items-center gap-2">
+                <span>🏥</span> {patient.consultationType}
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-            <p className="flex items-center gap-2">
-              <span>📞</span> {patient.phone}
-            </p>
-            <p className="flex items-center gap-2">
-              <span>📅</span> {new Date(patient.lastVisit).toLocaleDateString()}
-            </p>
-            <p className="flex items-center gap-2">
-              <span>🏥</span> {patient.consultationType}
-            </p>
-          </div>
         </div>
+      </Link>
+      <div className="flex justify-end mt-2">
         <div className="flex flex-col items-end gap-2">
           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
             patient.status === 'active' 
@@ -296,7 +300,7 @@ function PatientCard({ patient }: PatientCardProps) {
           }`}>
             {patient.status}
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => window.open(patient.pdfUrl, '_blank')}
               className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
@@ -304,12 +308,13 @@ function PatientCard({ patient }: PatientCardProps) {
             >
               📄
             </button>
-            <button
+            <Link
+              href={`/patients/${patient.id}`}
               className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
               title="View Patient Details"
             >
               👁️
-            </button>
+            </Link>
             {/* Add audio playback button if recording exists */}
             <button
               className="p-2 text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
