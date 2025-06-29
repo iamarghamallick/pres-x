@@ -6,6 +6,8 @@ import { patientService, prescriptionService, searchService, audioService } from
 import { Timestamp } from 'firebase/firestore';
 import { Patient } from '@/types/firestore';
 import { createClient } from '@supabase/supabase-js';
+import PredictionResult from '@/components/PredictionResult';
+import Prescription from '@/components/Prescription';
 
 type Medication = {
   name: string;
@@ -34,19 +36,90 @@ type FormData = {
   testReports: any[]; // You can type this more strictly if you know the structure
 };
 
+const allSymptoms = [
+  "Fever", "Cough", "Headache", "Sore throat", "Fatigue",
+  "Body ache", "Loss of appetite", "Nausea", "Vomiting", "Diarrhea",
+  "Shortness of breath", "Dizziness", "Chest pain", "Chills", "Sweating",
+  "Runny nose", "Sneezing", "Joint pain", "Muscle cramps", "Blurred vision"
+  // Add more as needed...
+];
+
+const commonTests = [
+  "CBC", "CRP", "Chest X-ray", "Liver Function Test", "Kidney Function Test",
+  "ECG", "MRI", "Blood Sugar", "Urine Routine", "D-Dimer", "CT Scan", "TSH", "Hemoglobin", "ESR"
+];
+
 const DoctorAssistantForm = () => {
+
+  const [formData, setFormData] = useState<FormData>({
+    patientType: '',
+    patientInfo: { name: '', age: '', gender: '', medicalHistory: '' },
+    vitals: { bp: '', spo2: '', weight: '' },
+    symptoms: '',
+    tests: [],
+    medications: [],
+    advice: '',
+    testReports: [],
+  });
+
+  const [loading, setLoading] = useState(false);
+
+
+  const [predictionData, setPredictionData] = useState(null);
+  const [presxData, setPresxData] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredSymptoms = searchQuery
+    ? allSymptoms.filter((s) =>
+      s.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    : allSymptoms.slice(0, 6); // Show only first 6 initially
+
+  const addSymptom = (symptom) => {
+    const current = formData.symptoms || "";
+    const symptomsList = current.split(",").map((s) => s.trim());
+    if (!symptomsList.includes(symptom)) {
+      const updated = current ? `${current}, ${symptom}` : symptom;
+      handleInputChange("symptoms", updated);
+    }
+  };
+
+  // const [searchQuery, setSearchQuery] = useState('');
+
+  // const updateTest = (index, value) => {
+  //   const updated = [...formData.tests];
+  //   updated[index] = value;
+  //   setFormData(prev => ({ ...prev, tests: updated }));
+  // };
+
+  // const addTest = () => {
+  //   setFormData(prev => ({ ...prev, tests: [...prev.tests, ''] }));
+  // };
+
+  const addTestFromSuggestion = (testName) => {
+    if (!formData.tests.includes(testName)) {
+      setFormData(prev => ({ ...prev, tests: [...prev.tests, testName] }));
+    }
+  };
+
+  const filteredTests = commonTests.filter(test =>
+    test.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (!formData?.tests || !formData.tests.includes(test))
+  );
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  
+
   // Patient search state
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Patient[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  
+
   // Audio recording state
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
@@ -54,27 +127,27 @@ const DoctorAssistantForm = () => {
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
   const [hasRecording, setHasRecording] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
-  
+
   const router = useRouter();
-  const [formData, setFormData] = useState<FormData>({
-    patientType: '',
-    patientInfo: {
-      name: '',
-      age: '',
-      gender: '',
-      medicalHistory: ''
-    },
-    vitals: {
-      bp: '',
-      spo2: '',
-      weight: ''
-    },
-    symptoms: '',
-    tests: [],
-    medications: [],
-    advice: '',
-    testReports: []
-  });
+  // const [formData, setFormData] = useState<FormData>({
+  //   patientType: '',
+  //   patientInfo: {
+  //     name: '',
+  //     age: '',
+  //     gender: '',
+  //     medicalHistory: ''
+  //   },
+  //   vitals: {
+  //     bp: '',
+  //     spo2: '',
+  //     weight: ''
+  //   },
+  //   symptoms: '',
+  //   tests: [],
+  //   medications: [],
+  //   advice: '',
+  //   testReports: []
+  // });
 
   const steps = [
     { id: 0, name: 'Patient Info', icon: User },
@@ -110,7 +183,7 @@ const DoctorAssistantForm = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
-      
+
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           setAudioChunks(prev => [...prev, event.data]);
@@ -129,7 +202,7 @@ const DoctorAssistantForm = () => {
       setRecordingDuration(0);
       recorder.start(1000); // Collect data every second
       setIsRecording(true);
-      
+
       // Update duration every second
       const interval = setInterval(() => {
         if (recorder.state === 'recording') {
@@ -138,7 +211,7 @@ const DoctorAssistantForm = () => {
           clearInterval(interval);
         }
       }, 1000);
-      
+
     } catch (error) {
       console.error('Error starting recording:', error);
       alert('Unable to access microphone. Please check permissions.');
@@ -160,7 +233,7 @@ const DoctorAssistantForm = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
-    
+
     try {
       // Validate required fields
       if (!formData.patientInfo.name || !formData.patientInfo.age || !formData.patientInfo.gender) {
@@ -176,7 +249,7 @@ const DoctorAssistantForm = () => {
             name: formData.patientInfo.name,
             age: parseInt(formData.patientInfo.age),
             gender: formData.patientInfo.gender as 'male' | 'female' | 'other',
-            phone: '', // We can add phone field to the form later
+            phone: formData.patientInfo.phone || '', // We can add phone field to the form later
           },
           ...(formData.patientInfo.medicalHistory && {
             medicalInfo: {
@@ -199,27 +272,40 @@ const DoctorAssistantForm = () => {
       let conversationRecording = undefined;
       if (hasRecording && audioChunks.length > 0) {
         setUploadingAudio(true);
-        
+
         try {
           // Create blob from audio chunks
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           const fileName = `consultation_${patientId}_${Date.now()}.webm`;
-          
+
+          // Create a download link
+          const url = URL.createObjectURL(audioBlob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+
+          // Clean up
+          URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+
           // Upload to Supabase Storage
-          const uploadResult = await audioService.uploadRecording(audioBlob, fileName);
-          
-          conversationRecording = {
-            id: `recording_${Date.now()}`,
-            audioUrl: uploadResult.audioUrl,
-            fileName: uploadResult.fileName,
-            duration: recordingDuration,
-            uploadedAt: Timestamp.now(),
-            fileSize: uploadResult.fileSize,
-          };
+          // const uploadResult = await audioService.uploadRecording(audioBlob, fileName);
+
+          // conversationRecording = {
+          //   id: `recording_${Date.now()}`,
+          //   audioUrl: uploadResult.audioUrl,
+          //   fileName: uploadResult.fileName,
+          //   duration: recordingDuration,
+          //   uploadedAt: Timestamp.now(),
+          //   fileSize: uploadResult.fileSize,
+          // };
         } catch (audioError) {
           console.error('Error uploading recording:', audioError);
           // Don't fail the entire prescription creation if audio upload fails
-          alert('Warning: Failed to upload conversation recording, but prescription will still be created.');
+          // alert('Warning: Failed to upload conversation recording, but prescription will still be created.');
         } finally {
           setUploadingAudio(false);
         }
@@ -227,6 +313,12 @@ const DoctorAssistantForm = () => {
 
       // Create prescription with conversation recording
       const prescriptionData = {
+        personalInfo: {
+          name: formData.patientInfo.name,
+          age: parseInt(formData.patientInfo.age),
+          gender: formData.patientInfo.gender as 'male' | 'female' | 'other',
+          phone: formData.patientInfo.phone || '', // Optional field
+        },
         patientId,
         consultationInfo: {
           consultationDate: Timestamp.now(),
@@ -268,14 +360,14 @@ const DoctorAssistantForm = () => {
       };
 
       console.log('Prescription data being sent to Firestore:', JSON.stringify(prescriptionData, null, 2));
+      setPresxData(prescriptionData);
 
       await prescriptionService.createPrescription(prescriptionData);
-      
-      setSubmitSuccess(true);
-      
+
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        router.push('/');
+        // router.push('/');
+        setSubmitSuccess(true);
       }, 2000);
 
     } catch (error) {
@@ -294,7 +386,45 @@ const DoctorAssistantForm = () => {
     }
   };
 
-  const nextStep = () => {
+  const formatFormData = (symptoms) => {
+    return symptoms
+      .split(',')
+      .map(symptom => symptom.trim())
+      .filter(symptom => symptom.length > 0)
+      .join(', ');
+  }
+
+  const nextStep = async () => {
+    if (currentStep === 2) {
+      console.log("Predicting deasease based on symptoms:", formData.symptoms);
+
+      const newFormData = new FormData();
+      newFormData.append("custom_symptoms", formatFormData(formData.symptoms));
+
+      try {
+        setLoading(true);
+        const response = await fetch(`https://medicare-4ae8.onrender.com/predict`, {
+          method: "POST",
+          body: newFormData,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error);
+        }
+        setPredictionData(data);
+        console.log("Prediction data received:", data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Prediction error:", error);
+        // alert("Something went wrong with prediction.");
+        setLoading(false);
+      }
+    }
+
+    if (currentStep === 5) {
+
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -379,27 +509,25 @@ const DoctorAssistantForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Patient Information</h2>
-            
+
             <div className="bg-blue-50 p-4 rounded-lg mb-6">
               <label className="block text-sm font-medium text-black mb-2">Patient Type</label>
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => handleInputChange('patientType', 'new')}
-                  className={`p-4 rounded-lg border-2 transition-all text-black ${
-                    formData.patientType === 'new' 
-                      ? 'border-blue-500 bg-blue-100' 
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
+                  className={`p-4 rounded-lg border-2 transition-all text-black ${formData.patientType === 'new'
+                    ? 'border-blue-500 bg-blue-100'
+                    : 'border-gray-300 hover:border-gray-400'
+                    }`}
                 >
                   New Patient
                 </button>
                 <button
                   onClick={() => handleInputChange('patientType', 'existing')}
-                  className={`p-4 rounded-lg border-2 transition-all text-black ${
-                    formData.patientType === 'existing' 
-                      ? 'border-blue-500 bg-blue-100' 
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
+                  className={`p-4 rounded-lg border-2 transition-all text-black ${formData.patientType === 'existing'
+                    ? 'border-blue-500 bg-blue-100'
+                    : 'border-gray-300 hover:border-gray-400'
+                    }`}
                 >
                   Existing Patient
                 </button>
@@ -491,6 +619,17 @@ const DoctorAssistantForm = () => {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="text"
+                  value={formData.patientInfo.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value, 'patientInfo')}
+                  className="w-full p-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter patient phone number (or telegram id)"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Medical History</label>
                 <textarea
                   value={formData.patientInfo.medicalHistory}
@@ -508,7 +647,7 @@ const DoctorAssistantForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Vital Signs</h2>
-            
+
             <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-purple-50 p-6 rounded-lg">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Blood Pressure</label>
@@ -553,7 +692,7 @@ const DoctorAssistantForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Symptoms</h2>
-            
+
             <div className="bg-yellow-50 p-4 rounded-lg mb-4">
               <p className="text-sm text-gray-700 flex items-center">
                 <Volume2 className="w-4 h-4 mr-2" />
@@ -561,9 +700,36 @@ const DoctorAssistantForm = () => {
               </p>
             </div>
 
+            {/* Search bar */}
+            <input
+              type="text"
+              placeholder="Search symptoms..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full text-black p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+
+            {/* Symptom grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {filteredSymptoms.map((symptom) => (
+                <button
+                  key={symptom}
+                  onClick={() => addSymptom(symptom)}
+                  className="px-3 py-2 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md transition"
+                  type="button"
+                >
+                  {symptom}
+                </button>
+              ))}
+              {filteredSymptoms.length === 0 && (
+                <p className="col-span-full text-sm text-gray-500">No matches found</p>
+              )}
+            </div>
+
+            {/* Textarea */}
             <textarea
               value={formData.symptoms}
-              onChange={(e) => handleInputChange('symptoms', e.target.value)}
+              onChange={(e) => handleInputChange("symptoms", e.target.value)}
               className="w-full p-4 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="E.g., Patient reports headache, fever for 2 days, body ache, loss of appetite..."
               rows={8}
@@ -575,7 +741,31 @@ const DoctorAssistantForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Test Prescription</h2>
-            
+
+            {/* Test Suggestions with Search */}
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Search common tests..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+
+              <div className="flex flex-wrap gap-2">
+                {filteredTests.map((test, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => addTestFromSuggestion(test)}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full hover:bg-blue-200 transition"
+                  >
+                    {test}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dynamic Test Inputs */}
             <div className="space-y-4">
               {formData.tests.map((test, index) => (
                 <div key={index} className="flex gap-2">
@@ -597,7 +787,7 @@ const DoctorAssistantForm = () => {
                   </button>
                 </div>
               ))}
-              
+
               <button
                 onClick={addTest}
                 className="w-full text-black p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
@@ -612,7 +802,7 @@ const DoctorAssistantForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Medication Prescription</h2>
-            
+
             <div className="space-y-4">
               {formData.medications.map((med, index) => (
                 <div key={index} className="p-4 bg-gray-50 rounded-lg space-y-3">
@@ -659,7 +849,7 @@ const DoctorAssistantForm = () => {
                   </button>
                 </div>
               ))}
-              
+
               <button
                 onClick={addMedication}
                 className="w-full p-3 border-2 text-black border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
@@ -674,7 +864,7 @@ const DoctorAssistantForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Advice & Follow-up</h2>
-            
+
             <textarea
               value={formData.advice}
               onChange={(e) => handleInputChange('advice', e.target.value)}
@@ -689,7 +879,7 @@ const DoctorAssistantForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Review Prescription</h2>
-            
+
             {submitError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="text-red-800">
@@ -702,14 +892,14 @@ const DoctorAssistantForm = () => {
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="text-green-800 flex items-center gap-2">
                   <Check className="w-5 h-5" />
-                  <span>Prescription created successfully! 
-                    {hasRecording && ' Conversation recording uploaded.'} 
+                  <span>Prescription created successfully!
+                    {hasRecording && ' Conversation recording uploaded.'}
                     Redirecting to dashboard...
                   </span>
                 </div>
               </div>
             )}
-            
+
             {uploadingAudio && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="text-blue-800 flex items-center gap-2">
@@ -718,7 +908,7 @@ const DoctorAssistantForm = () => {
                 </div>
               </div>
             )}
-            
+
             <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
               <div className="border-b text-black pb-4">
                 <h3 className="font-semibold text-lg mb-2">Patient Information</h3>
@@ -787,14 +977,13 @@ const DoctorAssistantForm = () => {
             </div>
 
             <div className="flex gap-4">
-              <button 
+              <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || submitSuccess}
-                className={`flex-1 p-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                  isSubmitting || submitSuccess
-                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
+                className={`flex-1 p-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${isSubmitting || submitSuccess
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+                  }`}
               >
                 {isSubmitting ? (
                   <>
@@ -813,13 +1002,12 @@ const DoctorAssistantForm = () => {
                   </>
                 )}
               </button>
-              <button 
+              <button
                 disabled={isSubmitting || submitSuccess}
-                className={`px-6 py-4 rounded-lg transition-colors ${
-                  isSubmitting || submitSuccess
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gray-500 text-white hover:bg-gray-600'
-                }`}
+                className={`px-6 py-4 rounded-lg transition-colors ${isSubmitting || submitSuccess
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-500 text-white hover:bg-gray-600'
+                  }`}
               >
                 Print Preview
               </button>
@@ -844,7 +1032,7 @@ const DoctorAssistantForm = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        {!presxData && <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
             <div className="flex justify-between items-start">
@@ -855,7 +1043,7 @@ const DoctorAssistantForm = () => {
                 </h1>
                 <p className="mt-2 text-blue-100">Voice-First Digital Consultation System</p>
               </div>
-              
+
               {/* Recording Status */}
               <div className="text-right">
                 {isRecording && (
@@ -887,18 +1075,16 @@ const DoctorAssistantForm = () => {
                 return (
                   <div
                     key={step.id}
-                    className={`flex flex-col items-center ${
-                      index <= currentStep ? 'text-blue-600' : 'text-gray-400'
-                    }`}
+                    className={`flex flex-col items-center ${index <= currentStep ? 'text-blue-600' : 'text-gray-400'
+                      }`}
                   >
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        index < currentStep
-                          ? 'bg-green-500 text-white'
-                          : index === currentStep
+                      className={`w-12 h-12 rounded-full flex items-center justify-center ${index < currentStep
+                        ? 'bg-green-500 text-white'
+                        : index === currentStep
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-300 text-gray-500'
-                      }`}
+                        }`}
                     >
                       {index < currentStep ? (
                         <Check className="w-6 h-6" />
@@ -922,6 +1108,7 @@ const DoctorAssistantForm = () => {
 
           {/* Form Content */}
           <div className="p-8">
+            {predictionData && <PredictionResult predictionData={predictionData} />}
             {renderStepContent()}
           </div>
 
@@ -929,11 +1116,10 @@ const DoctorAssistantForm = () => {
           <div className="p-6 bg-gray-50 flex justify-between items-center">
             <button
               onClick={prevStep}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
-                currentStep === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gray-500 text-white hover:bg-gray-600'
-              }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${currentStep === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-500 text-white hover:bg-gray-600'
+                }`}
               disabled={currentStep === 0}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -944,13 +1130,12 @@ const DoctorAssistantForm = () => {
             <div className="flex flex-col items-center gap-2">
               <button
                 onClick={toggleRecording}
-                className={`p-4 rounded-full transition-all transform hover:scale-105 ${
-                  isRecording
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : hasRecording
+                className={`p-4 rounded-full transition-all transform hover:scale-105 ${isRecording
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : hasRecording
                     ? 'bg-green-500 text-white'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
+                  }`}
                 title={isRecording ? 'Stop Recording' : hasRecording ? 'Recording Complete' : 'Start Recording'}
               >
                 {isRecording ? (
@@ -966,18 +1151,19 @@ const DoctorAssistantForm = () => {
 
             <button
               onClick={nextStep}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
-                currentStep === steps.length - 1
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${currentStep === steps.length - 1
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               disabled={currentStep === steps.length - 1}
             >
-              Next
+              {loading ? "Loading..." : "Next"}
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
-        </div>
+        </div>}
+
+        {presxData && submitSuccess && <Prescription prescriptionData={presxData} />}
       </div>
     </div>
   );
