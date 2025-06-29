@@ -12,7 +12,11 @@
     "@google-cloud/storage": "^7.16.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.2",
+    "autoprefixer": "^10.4.21",
     "firebase": "^11.9.1",
+    "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^1.5.11",
+    "jspdf": "^3.0.1",
     "lucide-react": "^0.525.0",
     "multer": "^2.0.1",
     "next": "15.3.4",
@@ -20,7 +24,8 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/html2canvas": "^0.5.35",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
