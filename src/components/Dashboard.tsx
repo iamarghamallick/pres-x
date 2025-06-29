@@ -100,7 +100,7 @@ export function Dashboard() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
           <Stethoscope className="w-10 h-10 text-blue-600" />
-          Welcome back, Dr. Smith
+          Welcome back, Dr. S. Paul
         </h1>
         <p className="text-gray-600 text-lg">Here's what's happening with your patients today.</p>
       </div>
