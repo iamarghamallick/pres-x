@@ -23,6 +23,7 @@ type FormData = {
     age: string;
     gender: string;
     medicalHistory: string;
+    phone: string;
   };
   vitals: {
     bp: string;
@@ -53,7 +54,7 @@ const DoctorAssistantForm = () => {
 
   const [formData, setFormData] = useState<FormData>({
     patientType: '',
-    patientInfo: { name: '', age: '', gender: '', medicalHistory: '' },
+    patientInfo: { name: '', age: '', gender: '', medicalHistory: '', phone: '' },
     vitals: { bp: '', spo2: '', weight: '' },
     symptoms: '',
     tests: [],
@@ -496,7 +497,8 @@ const DoctorAssistantForm = () => {
         name: patient.personalInfo.name,
         age: patient.personalInfo.age.toString(),
         gender: patient.personalInfo.gender,
-        medicalHistory: patient.medicalInfo?.chronicConditions?.join(', ') || ''
+        medicalHistory: patient.medicalInfo?.chronicConditions?.join(', ') || '',
+        phone: patient.personalInfo.phone || ''
       }
     }));
     setSearchTerm('');
@@ -919,6 +921,7 @@ const DoctorAssistantForm = () => {
                 {formData.patientInfo.medicalHistory && (
                   <p className="text-gray-600">Medical History: {formData.patientInfo.medicalHistory}</p>
                 )}
+                <p className="text-gray-600">Name: {formData.patientInfo.phone || 'Not provided'}</p>
               </div>
 
               <div className="border-b pb-4">
