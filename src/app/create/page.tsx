@@ -7,6 +7,7 @@ import { Timestamp } from 'firebase/firestore';
 import { Patient } from '@/types/firestore';
 import { createClient } from '@supabase/supabase-js';
 import PredictionResult from '@/components/PredictionResult';
+import Prescription from '@/components/Prescription';
 
 type Medication = {
   name: string;
@@ -65,6 +66,7 @@ const DoctorAssistantForm = () => {
 
 
   const [predictionData, setPredictionData] = useState(null);
+  const [presxData, setPresxData] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -247,7 +249,7 @@ const DoctorAssistantForm = () => {
             name: formData.patientInfo.name,
             age: parseInt(formData.patientInfo.age),
             gender: formData.patientInfo.gender as 'male' | 'female' | 'other',
-            phone: '', // We can add phone field to the form later
+            phone: formData.patientInfo.phone || '', // We can add phone field to the form later
           },
           ...(formData.patientInfo.medicalHistory && {
             medicalInfo: {
@@ -311,6 +313,12 @@ const DoctorAssistantForm = () => {
 
       // Create prescription with conversation recording
       const prescriptionData = {
+        personalInfo: {
+          name: formData.patientInfo.name,
+          age: parseInt(formData.patientInfo.age),
+          gender: formData.patientInfo.gender as 'male' | 'female' | 'other',
+          phone: formData.patientInfo.phone || '', // Optional field
+        },
         patientId,
         consultationInfo: {
           consultationDate: Timestamp.now(),
@@ -352,14 +360,14 @@ const DoctorAssistantForm = () => {
       };
 
       console.log('Prescription data being sent to Firestore:', JSON.stringify(prescriptionData, null, 2));
+      setPresxData(prescriptionData);
 
       await prescriptionService.createPrescription(prescriptionData);
 
-      setSubmitSuccess(true);
-
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        router.push('/');
+        // router.push('/');
+        setSubmitSuccess(true);
       }, 2000);
 
     } catch (error) {
@@ -411,6 +419,10 @@ const DoctorAssistantForm = () => {
         // alert("Something went wrong with prediction.");
         setLoading(false);
       }
+    }
+
+    if (currentStep === 5) {
+
     }
 
     if (currentStep < steps.length - 1) {
@@ -604,6 +616,17 @@ const DoctorAssistantForm = () => {
                   <option value="female">Female</option>
                   <option value="other">Other</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="text"
+                  value={formData.patientInfo.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value, 'patientInfo')}
+                  className="w-full p-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter patient phone number (or telegram id)"
+                />
               </div>
 
               <div>
@@ -1009,7 +1032,7 @@ const DoctorAssistantForm = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        {!presxData && <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
             <div className="flex justify-between items-start">
@@ -1138,7 +1161,9 @@ const DoctorAssistantForm = () => {
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
-        </div>
+        </div>}
+
+        {presxData && submitSuccess && <Prescription prescriptionData={presxData} />}
       </div>
     </div>
   );
